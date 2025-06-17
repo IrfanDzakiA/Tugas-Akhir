@@ -895,11 +895,11 @@ void updateLcdTask(void *pvParameter)
 
 void onLoraReceiveCallback(int packetSize)
 {
-  // Original checks for packetSize, recipient, length remain the same...
-  // ... (assuming they are correct from previous code)
+  
+
 
   if (packetSize == 0)
-    return; // Should not happen if called correctly, but safe check.
+    return; 
 
   digitalWrite(ledKanan, HIGH); // RX LED ON
 
@@ -926,11 +926,13 @@ void onLoraReceiveCallback(int packetSize)
     return;
   }
 
-  // --- Valid Response Processing ---
-  Serial.print("[LoRa RX Response Data] -> "); // Indicate it's the response
-  Serial.println(incoming);
+  // --- Pemrosesan Respons yang Valid ---
+Serial.print("[Data Respons LoRa Diterima] -> "); // Menunjukkan bahwa ini adalah data respons
+Serial.println(incoming);                         // Mencetak isi data respons yang diterima ke Serial Monitor
 
-  loraRSSI = LoRa.packetRssi(); // Store RSSI of the response
+
+  loraRSSI = LoRa.packetRssi(); // Menyimpan nilai RSSI dari respons
+
 
   JsonDocument doc;
   DeserializationError error = deserializeJson(doc, incoming);
@@ -945,7 +947,7 @@ void onLoraReceiveCallback(int packetSize)
   }
   else
   {
-    // Update state based on the valid response from the receiver/server
+    // Perbarui status berdasarkan respons valid dari receiver/server
     serverResponse.classification = doc["classification"];
     serverResponse.buzzerOn = doc["buzzer_on"];
     Serial.printf("[LoRa RX] Response Parsed: Class=%d, Buzzer=%d\n", serverResponse.classification, serverResponse.buzzerOn);
@@ -973,14 +975,16 @@ void sendLoraMessage(String message)
     LoRa.print(message);                        // add payload
 
     if (LoRa.endPacket())
-    { // finish packet and send it (blocking)
-      // Serial.print("[LoRa TX Data Sent] -> ");
-      // Serial.println(message);
-    }
+{ // menyelesaikan paket dan mengirimkannya (secara blocking)
+  // Serial.print("[Data LoRa Dikirim] -> ");
+  // Serial.println(message);
+}
+
     else
     {
       Serial.println("[LoRa TX ERROR] Failed to send packet!");
-      // Consider how to handle TX failure - retry? Log?
+      // // Pertimbangkan bagaimana menangani kegagalan pengiriman (TX) – apakah perlu dicoba ulang? Dicatat (log)?
+
     }
   }
   else
@@ -988,12 +992,12 @@ void sendLoraMessage(String message)
     Serial.println("[LoRa TX ERROR] Failed to begin packet!");
   }
 
-  digitalWrite(ledKiri, LOW); // Turn off TX LED immediately after attempt
+  digitalWrite(ledKiri, LOW); // // Matikan LED TX segera setelah percobaan pengiriman
+
 
   msgId++; // Increment message ID
 
-  // *** Remove vTaskDelay and LoRa.receive() from here ***
-  // The loop() function now controls when to enter receive mode.
+  
 }
 // Fungsi untuk menampilkan teks di tengah LCD
 void centerText(const char *text, int row)
@@ -1007,14 +1011,16 @@ void centerText(const char *text, int row)
 
 void loop()
 {
-  // Check if it's time to start the send & receive cycle
+  // // Periksa apakah saat ini waktunya untuk memulai siklus kirim & terima
+
   if (millis() - lastSendTime > updateRate && !paused)
   {
     // --- Phase 1: Send Sensor Data ---
     JsonDocument doc;
     String serializedJson;
 
-    // Ensure sensor values are reasonably fresh (tasks should be running)
+    // // Pastikan nilai sensor masih cukup baru (tugas pembacaan sensor harus berjalan)
+
     doc["humidity"] = humidity;
     doc["temperature"] = temperature;
     doc["ph"] = PH;
@@ -1025,7 +1031,8 @@ void loop()
     Serial.printf("[%lu] Starting Send cycle...\n", millis());
     sendLoraMessage(serializedJson); // Call the send function
 
-    // --- Phase 2: Listen for Response ---
+    // // --- Fase 2: Menunggu Respons ---
+
     Serial.println("[LoRa] TX Done. Switching to RX mode for response...");
     LoRa.receive(); // Explicitly enter receive mode to listen
 
@@ -1051,40 +1058,35 @@ void loop()
     if (!responseReceived)
     {
       Serial.printf("[%lu] No response received within timeout.\n", millis());
-      // Optional: Clear previous server response data if desired on timeout
-      // serverResponse.classification = false; // Example
-      // serverResponse.buzzerOn = false;       // Example
-      loraRSSI = 0; // Indicate no current connection/response
+      
+      loraRSSI = 0; 
     }
 
     Serial.println("[LoRa] Listening period over. Idling LoRa module.");
     LoRa.idle(); // Put LoRa module to sleep/idle until the next send cycle
 
-    // Update lastSendTime only AFTER the complete cycle
+ // Perbarui lastSendTime hanya SETELAH seluruh siklus selesai
+
     lastSendTime = millis();
     Serial.println("------------------------------");
 
-  } // End of timed interval check
+  } // Akhir dari pemeriksaan interval waktu
 
-  // If paused, handle pause indicators (keep this part)
+
+  //  Jika dijeda, tangani indikator jeda (pertahankan bagian ini)
+
   if (paused)
   {
-    // This pause logic might need review, but is outside the core LoRa issue.
-    // activateBuzzerUntil = millis(); // What is this intended for?
+    
+
     digitalWrite(ledKiri, HIGH);  // Indicate paused
     digitalWrite(ledKanan, HIGH); // Indicate paused
   }
   else
   {
-    // Ensure LEDs are off when not paused (unless used for TX/RX)
-    // The send/receive functions handle their respective LEDs now.
-    // digitalWrite(ledKiri, LOW);
-    // digitalWrite(ledKanan, LOW);
+    
   }
 
-  // Serial.printf();
-
-  // The main loop doesn't need to constantly check LoRa.parsePacket anymore.
-  // It yields briefly to other tasks.
+  
   vTaskDelay(pdMS_TO_TICKS(10));
 }
